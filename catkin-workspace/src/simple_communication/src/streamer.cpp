@@ -13,7 +13,7 @@
 int main(int argc, char **argv)
 {
   const char* node_name = "streamer";
-  const char* topic_name = "/test1/numbers";
+  const char* topic_name = "/task1/numbers";
   uint32_t queue_size = 200;
 
   // Advertise one message every second
