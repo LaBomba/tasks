@@ -80,10 +80,10 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES simple_communication
-#  CATKIN_DEPENDS roscpp rospy std_msgs
-#  DEPENDS system_lib
+  INCLUDE_DIRS include
+  LIBRARIES simple_communication
+  CATKIN_DEPENDS roscpp rospy std_msgs
+  DEPENDS system_lib
 )
 
 ###########
@@ -96,6 +96,14 @@ catkin_package(
 include_directories(
   ${catkin_INCLUDE_DIRS}
 )
+
+add_executable(streamer src/streamer.cpp)
+target_link_libraries(streamer ${catkin_LIBRARIES})
+add_dependencies(streamer simple_communication_generate_messages_cpp)
+
+add_executable(manipulator src/manipulator.cpp)
+target_link_libraries(manipulator ${catkin_LIBRARIES})
+add_dependencies(manipulator simple_communication_generate_messages_cpp)
 
 ## Declare a cpp library
 # add_library(simple_communication
