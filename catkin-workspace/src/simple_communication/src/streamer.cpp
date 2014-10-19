@@ -2,7 +2,6 @@
 #include <cstdlib>
 
 #include "ros/ros.h"
-#include "std_msgs/String.h"
 #include "std_msgs/Int16.h"
 
 
@@ -32,6 +31,7 @@ int main(int argc, char **argv)
   {
     std_msgs::Int16 message;
 
+    // Simple pseudorandom generator
     message.data = rand();
 
     ROS_INFO("%s said: %d", node_name, message.data);
