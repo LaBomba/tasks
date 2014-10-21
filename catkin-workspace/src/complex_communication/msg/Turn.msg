@@ -1,2 +1,2 @@
 # Player's spot
-uint8 spot
+int32 spot

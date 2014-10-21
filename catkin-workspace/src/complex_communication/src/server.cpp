@@ -1,5 +1,8 @@
-#include "ros/ros.h"
 #include <cstdlib>
+#include "ros/ros.h"
+#include "complex_communication/Table.h"
+#include "complex_communication/Turn.h"
+#include <boost/array.hpp>
 
 using namespace std;
 
@@ -14,8 +17,9 @@ class TicTacToe
     bool applyTurn(unsigned spot, int current_player);
     bool hasWinner();
     int getWinner() const;
+    boost::array<int, 9> getBoard() const;
   private:
-    int* board_;
+    boost::array<int, 9> board_;
     int symbols_[2];
     int round_;
     int winner_;
@@ -28,7 +32,6 @@ class TicTacToe
 TicTacToe::TicTacToe(int size)
 {
   board_size_ = size;
-  board_ = new int [size];
 
   // Assign a symbol for each player
   symbols_[0] = 1;
@@ -55,6 +58,10 @@ int TicTacToe::getWinner() const
   return winner_;
 }
 
+boost::array<int, 9> TicTacToe::getBoard() const
+{
+  return board_;
+}
 bool TicTacToe::hasWinner()
 {
   // Check if we have a winner
@@ -173,25 +180,42 @@ void TicTacToe::announceBoard() const
 
 int main(int argc, char** argv)
 {
+
+  int board_size = 9;
   const char* server_name = "tictac";
   const char* table_topic = "/task2/table";
   const char* play_topic = "/task2/play";
   uint32_t queue_size = 200;
   int publish_rate = 1;
 
-  ros::init(argc, argv, "name");
+  ros::init(argc, argv, server_name);
 
   ros::NodeHandle node_handler;
+  ros::Publisher table_publisher = \
+                 node_handler.advertise<complex_communication::Turn>(table_topic, queue_size);
 
   ros::Rate loop_rate(publish_rate);
-  TicTacToe game = TicTacToe(9);
-  while(ros::ok())
+
+  TicTacToe game = TicTacToe(board_size);
+  ROS_INFO("The game is starting.");
+
+  while(ros::ok() && !game.isFull())
   {
     game.announceBoard();
+
+    complex_communication::Turn table_message;
+    table_message.spot = 2;
+    table_publisher.publish(table_message);
 
     ros::spinOnce();
 
     loop_rate.sleep();
   }
 
+  if (game.isFull())
+  {
+    ROS_INFO("The result of the game is draw.");
+  }
+
+  return 0;
 }

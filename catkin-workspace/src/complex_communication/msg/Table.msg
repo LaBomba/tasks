@@ -1,5 +1,5 @@
 # The tictactoe game table
-uint8[9] table
+int32[9] table
 
 # Player turn
-uint8 play
+int32 play
