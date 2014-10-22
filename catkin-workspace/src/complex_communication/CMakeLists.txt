@@ -110,6 +110,10 @@ include_directories(
  target_link_libraries(server ${catkin_LIBRARIES})
  add_dependencies(server complex_communication_generate_messages_cpp)
 
+ add_executable(player_1 src/player_1.cpp)
+ target_link_libraries(player_1 ${catkin_LIBRARIES})
+ add_dependencies(player_1 complex_communication_generate_messages_cpp)
+
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(complex_communication_node complex_communication_generate_messages_cpp)

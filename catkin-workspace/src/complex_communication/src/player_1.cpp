@@ -1,20 +1,111 @@
+#include <cstdlib>
+#include <algorithm>
+#include <vector>
+#include <boost/array.hpp>
 #include "ros/ros.h"
 #include "complex_communication/Turn.h"
+#include "complex_communication/Table.h"
 
-void chatterCallback(complex_communication::Turn msg)
+#define BOARD_SIZE 9
+
+class Player
 {
-  ROS_INFO("I heard: [%d]", msg.spot);
+  public:
+    Player(std::string name, int player_id, ros::Publisher pub);
+    ~Player() {};
+
+    bool isGameOver() const { return game_over_; };
+    int makeMove(boost::array<int, BOARD_SIZE> board);
+    void makeMoveCallback(const complex_communication::TableConstPtr& message);
+    std::string getName() const { return name_; };
+    int getID() const { return player_id_; };
+    void setGameStatus(bool status) { game_over_ = status; };
+  private:
+    std::string name_;
+    int player_id_;
+    bool game_over_;
+    ros::Publisher publisher_;
+};
+
+Player::Player(std::string name, int player_id, ros::Publisher pub)
+{
+  name_ = name;
+  player_id_ = player_id;
+  game_over_ = false;
+  publisher_ = pub;
+}
+
+int Player::makeMove(boost::array<int, BOARD_SIZE>  board)
+{
+  // Check for free spots
+  std::vector<int> temp;
+  for (int i = 0; i < BOARD_SIZE; i++)
+  {
+    if (board[i] == 0)
+    {
+      temp.push_back(i);
+    }
+  }
+
+  if (temp.size() == 0)
+  {
+    return 0;
+  }
+
+  std::random_shuffle(temp.begin(), temp.end());
+
+  return temp.at(0);
+
+}
+
+void Player::makeMoveCallback(const complex_communication::TableConstPtr& message)
+{
+  if (message->play == Player::getID())
+  {
+    ROS_INFO("Now it's my turn.");
+
+    int move = Player::makeMove(message->table);
+
+    ROS_INFO("I play %d", move);
+
+    // Sending move to server
+    complex_communication::Turn turn;
+    turn.spot = move;
+    turn.id = Player::getID();
+
+    publisher_.publish(turn);
+
+  }
+
 }
 
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "listener");
+  const char* player_name = "Player1";
+  const char* table_topic = "/task2/table";
+  const char* play_topic = "/task2/play";
+  uint32_t queue_size = 200;
 
-  ros::NodeHandle node_hanlder;
+  ros::init(argc, argv, player_name);
 
-  ros::Subscriber sub = node_hanlder.subscribe("/task2/table", 200, chatterCallback);
+  ros::NodeHandle node_handler;
 
-  ros::spin();
+  ros::Publisher publisher = \
+                 node_handler.advertise<complex_communication::Turn>(play_topic, queue_size);
+
+  Player player = Player(player_name, 1, publisher);
+
+  ros::Subscriber subscriber = node_handler.subscribe(table_topic, queue_size,
+                                               &Player::makeMoveCallback, &player);
+
+  ros::Rate loop_rate(1);
+  while (ros::ok() && !player.isGameOver())
+  {
+
+    ros::spinOnce();
+
+    loop_rate.sleep();
+  }
 
 }

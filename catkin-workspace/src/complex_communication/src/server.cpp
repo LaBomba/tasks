@@ -19,7 +19,7 @@ class TicTacToe
     int getWinner() const;
     boost::array<int, 9> getBoard() const;
     int getNextPlayer() const;
-    void makeMoveCallback(const complex_communication::TurnConstPtr& message);
+    void applyTurnCallback(const complex_communication::TurnConstPtr& message);
   private:
     boost::array<int, 9> board_;
     int symbols_[2];
@@ -186,9 +186,9 @@ void TicTacToe::announceBoard() const
   ROS_INFO(" -----");
 }
 
-void TicTacToe::makeMoveCallback(const complex_communication::TurnConstPtr& message)
+void TicTacToe::applyTurnCallback(const complex_communication::TurnConstPtr& message)
 {
-  ROS_INFO("Inside game callback %d", message->spot);
+  ROS_INFO("Received %d from %d ", message->spot, message->id);
   TicTacToe::applyTurn(message->spot, message->id);
 }
 
@@ -201,7 +201,7 @@ int main(int argc, char** argv)
   const char* table_topic = "/task2/table";
   const char* play_topic = "/task2/play";
   uint32_t queue_size = 200;
-  float publish_rate = 0.2;
+  float publish_rate = 0.3;
 
   ros::init(argc, argv, server_name);
 
@@ -212,7 +212,7 @@ int main(int argc, char** argv)
                  node_handler.advertise<complex_communication::Table>(table_topic, queue_size);
   ros::Subscriber play_subscriber = \
                   node_handler.subscribe(play_topic, queue_size,
-                                        &TicTacToe::makeMoveCallback, &game);
+                                        &TicTacToe::applyTurnCallback, &game);
 
   ros::Rate loop_rate(publish_rate);
 
@@ -221,6 +221,12 @@ int main(int argc, char** argv)
   while(ros::ok() && !game.isFull())
   {
     game.announceBoard();
+
+    if (game.hasWinner())
+    {
+      ROS_INFO("We have a winner: %d", game.getWinner());
+      break;
+    }
 
     complex_communication::Table table_message;
 
@@ -231,12 +237,6 @@ int main(int argc, char** argv)
     // Send info to players
     table_publisher.publish(table_message);
 
-    if (game.hasWinner())
-    {
-      ROS_INFO("We have a winner: %d", game.getWinner());
-      break;
-    }
-
     ros::spinOnce();
 
     loop_rate.sleep();
@@ -244,6 +244,7 @@ int main(int argc, char** argv)
 
   if (game.isFull())
   {
+    game.announceBoard();
     ROS_INFO("We have a draw.");
   }
 
