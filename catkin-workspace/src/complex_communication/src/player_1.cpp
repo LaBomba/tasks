@@ -121,7 +121,7 @@ int main(int argc, char** argv)
     loop_rate.sleep();
   }
 
-  ROS_INFO("Shutting down...", player.getID());
+  ROS_INFO("Shutting down...");
 
   return 0;
 }
