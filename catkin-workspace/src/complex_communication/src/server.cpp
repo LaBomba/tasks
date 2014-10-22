@@ -5,7 +5,7 @@
 #include "complex_communication/Turn.h"
 #include <boost/array.hpp>
 
-using namespace std;
+#define BOARD_SIZE 9
 
 class TicTacToe
 {
@@ -18,11 +18,11 @@ class TicTacToe
     bool applyTurn(unsigned spot, int current_player);
     bool hasWinner();
     int getWinner() const;
-    boost::array<int, 9> getBoard() const;
+    boost::array<int, BOARD_SIZE> getBoard() const;
     int getNextPlayer() const;
     void applyTurnCallback(const complex_communication::TurnConstPtr& message);
   private:
-    boost::array<int, 9> board_;
+    boost::array<int, BOARD_SIZE> board_;
     int symbols_[2];
     int round_;
     int winner_;
@@ -61,7 +61,7 @@ int TicTacToe::getWinner() const
   return winner_;
 }
 
-boost::array<int, 9> TicTacToe::getBoard() const
+boost::array<int, BOARD_SIZE> TicTacToe::getBoard() const
 {
   return board_;
 }
@@ -196,7 +196,7 @@ void TicTacToe::applyTurnCallback(const complex_communication::TurnConstPtr& mes
 int main(int argc, char** argv)
 {
 
-  int boardSize = 9;
+  int boardSize = BOARD_SIZE;
   const char* server_name = "tictac";
   const char* table_topic = "/task2/table";
   const char* play_topic = "/task2/play";
