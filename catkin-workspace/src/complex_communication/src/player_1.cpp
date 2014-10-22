@@ -3,6 +3,7 @@
 #include <vector>
 #include <boost/array.hpp>
 #include "ros/ros.h"
+#include "std_msgs/Int32.h"
 #include "complex_communication/Turn.h"
 #include "complex_communication/Table.h"
 
@@ -20,6 +21,7 @@ class Player
     std::string getName() const { return name_; };
     int getID() const { return player_id_; };
     void setGameStatus(bool status) { game_over_ = status; };
+    void closeCallback(const std_msgs::Int32 message);
   private:
     std::string name_;
     int player_id_;
@@ -79,12 +81,21 @@ void Player::makeMoveCallback(const complex_communication::TableConstPtr& messag
 
 }
 
+void Player::closeCallback(const std_msgs::Int32 message)
+{
+  if (message.data == 1)
+  {
+    Player::setGameStatus(true);
+
+  }
+}
 
 int main(int argc, char** argv)
 {
   const char* player_name = "Player1";
   const char* table_topic = "/task2/table";
   const char* play_topic = "/task2/play";
+  const char* close_topic = "/task2/close";
   uint32_t queue_size = 200;
 
   ros::init(argc, argv, player_name);
@@ -98,6 +109,8 @@ int main(int argc, char** argv)
 
   ros::Subscriber subscriber = node_handler.subscribe(table_topic, queue_size,
                                                &Player::makeMoveCallback, &player);
+  ros::Subscriber close_sub = node_handler.subscribe(close_topic, queue_size,
+                                              &Player::closeCallback, &player);
 
   ros::Rate loop_rate(1);
   while (ros::ok() && !player.isGameOver())
@@ -108,4 +121,7 @@ int main(int argc, char** argv)
     loop_rate.sleep();
   }
 
+  ROS_INFO("Shutting down...", player.getID());
+
+  return 0;
 }

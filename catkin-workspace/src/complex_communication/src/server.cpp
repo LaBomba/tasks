@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include "ros/ros.h"
+#include "std_msgs/Int32.h"
 #include "complex_communication/Table.h"
 #include "complex_communication/Turn.h"
 #include <boost/array.hpp>
@@ -200,6 +201,7 @@ int main(int argc, char** argv)
   const char* server_name = "tictac";
   const char* table_topic = "/task2/table";
   const char* play_topic = "/task2/play";
+  const char* close_topic = "/task2/close";
   uint32_t queue_size = 200;
   float publish_rate = 0.3;
 
@@ -208,6 +210,8 @@ int main(int argc, char** argv)
   TicTacToe game = TicTacToe(board_size);
 
   ros::NodeHandle node_handler;
+  ros::Publisher close_publisher = \
+                 node_handler.advertise<std_msgs::Int32>(close_topic, queue_size);
   ros::Publisher table_publisher = \
                  node_handler.advertise<complex_communication::Table>(table_topic, queue_size);
   ros::Subscriber play_subscriber = \
@@ -218,12 +222,16 @@ int main(int argc, char** argv)
 
   ROS_INFO("The game is starting.");
 
+  std_msgs::Int32 close_message;
+  close_message.data = 1;
+
   while(ros::ok() && !game.isFull())
   {
     game.announceBoard();
 
     if (game.hasWinner())
     {
+      close_publisher.publish(close_message);
       ROS_INFO("We have a winner: %d", game.getWinner());
       break;
     }
@@ -244,6 +252,7 @@ int main(int argc, char** argv)
 
   if (game.isFull())
   {
+    close_publisher.publish(close_message);
     game.announceBoard();
     ROS_INFO("We have a draw.");
   }
