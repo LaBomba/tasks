@@ -18,6 +18,8 @@ class TicTacToe
     bool hasWinner();
     int getWinner() const;
     boost::array<int, 9> getBoard() const;
+    int getNextPlayer() const;
+    void makeMoveCallback(const complex_communication::TurnConstPtr& message);
   private:
     boost::array<int, 9> board_;
     int symbols_[2];
@@ -62,6 +64,12 @@ boost::array<int, 9> TicTacToe::getBoard() const
 {
   return board_;
 }
+
+int TicTacToe::getNextPlayer() const
+{
+  return next_player_;
+}
+
 bool TicTacToe::hasWinner()
 {
   // Check if we have a winner
@@ -160,6 +168,7 @@ bool TicTacToe::isFull() const
 void TicTacToe::announceBoard() const
 {
   ROS_INFO("** Round: %d", round_);
+  ROS_INFO("** Next player %d", next_player_);
   ROS_INFO("** Free spots: %d", free_spots_);
   for (int i = 0; i < board_size_; i++)
   {
@@ -177,6 +186,12 @@ void TicTacToe::announceBoard() const
   ROS_INFO(" -----");
 }
 
+void TicTacToe::makeMoveCallback(const complex_communication::TurnConstPtr& message)
+{
+  ROS_INFO("Inside game callback %d", message->spot);
+  TicTacToe::applyTurn(message->spot, message->id);
+}
+
 
 int main(int argc, char** argv)
 {
@@ -186,26 +201,41 @@ int main(int argc, char** argv)
   const char* table_topic = "/task2/table";
   const char* play_topic = "/task2/play";
   uint32_t queue_size = 200;
-  int publish_rate = 1;
+  float publish_rate = 0.2;
 
   ros::init(argc, argv, server_name);
 
+  TicTacToe game = TicTacToe(board_size);
+
   ros::NodeHandle node_handler;
   ros::Publisher table_publisher = \
-                 node_handler.advertise<complex_communication::Turn>(table_topic, queue_size);
+                 node_handler.advertise<complex_communication::Table>(table_topic, queue_size);
+  ros::Subscriber play_subscriber = \
+                  node_handler.subscribe(play_topic, queue_size,
+                                        &TicTacToe::makeMoveCallback, &game);
 
   ros::Rate loop_rate(publish_rate);
 
-  TicTacToe game = TicTacToe(board_size);
   ROS_INFO("The game is starting.");
 
   while(ros::ok() && !game.isFull())
   {
     game.announceBoard();
 
-    complex_communication::Turn table_message;
-    table_message.spot = 2;
+    complex_communication::Table table_message;
+
+    // Gather information about game state
+    table_message.play = game.getNextPlayer();
+    table_message.table = game.getBoard();
+
+    // Send info to players
     table_publisher.publish(table_message);
+
+    if (game.hasWinner())
+    {
+      ROS_INFO("We have a winner: %d", game.getWinner());
+      break;
+    }
 
     ros::spinOnce();
 
@@ -214,7 +244,7 @@ int main(int argc, char** argv)
 
   if (game.isFull())
   {
-    ROS_INFO("The result of the game is draw.");
+    ROS_INFO("We have a draw.");
   }
 
   return 0;
