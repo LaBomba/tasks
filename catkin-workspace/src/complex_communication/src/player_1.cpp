@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <algorithm>
 #include <vector>
+#include <ctime>
 #include <boost/array.hpp>
 #include "ros/ros.h"
 #include "std_msgs/Int32.h"
@@ -8,6 +9,12 @@
 #include "complex_communication/Table.h"
 
 #define BOARD_SIZE 9
+
+// Random generator function
+int rand_gen (int i)
+{
+  return std::rand() % i;
+}
 
 class Player
 {
@@ -53,8 +60,8 @@ int Player::makeMove(boost::array<int, BOARD_SIZE>  board)
   {
     return 0;
   }
-
-  std::random_shuffle(temp.begin(), temp.end());
+  std::srand(unsigned (std::time(0)));
+  std::random_shuffle(temp.begin(), temp.end(), rand_gen);
 
   return temp.at(0);
 
